@@ -4,5 +4,4 @@ data = {
 }
 
 
-
 print(f"Application Name: {data['name']}, Version: {data['version']}")
