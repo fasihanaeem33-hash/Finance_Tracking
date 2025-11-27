@@ -1,0 +1,8 @@
+﻿,date,amount,category,note,type
+0,2025-11-28,25000,Rent,,expense
+1,2025-11-27,100000,Salary,,income
+2,2025-11-27,15000,Grocery,,expense
+3,2025-11-27,25000,Shares,,investment
+4,2025-11-27,5000,Conveyance,,expense
+5,2025-11-27,5000,Conveyance,,expense
+6,2025-11-27,15000,freelance,,income
