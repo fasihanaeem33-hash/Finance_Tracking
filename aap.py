@@ -158,7 +158,7 @@ df = transactions_to_df(transactions)
 
 # Sidebar: Add transaction
 st.sidebar.header("Add a transaction")
-with st.sidebar.form("tx_form"):
+with st.sidebar.form("tx_form", clear_on_submit=True):
     tx_type = st.selectbox("Type", ["income", "expense", "investment"])
     tx_date = st.date_input("Date", value=datetime.today())
     tx_amount = st.number_input("Amount", min_value=0.01, step=0.01, value=0.00, format="%.2f")
@@ -196,7 +196,7 @@ with col1:
     st.subheader("Transactions")
     # Provide a main-area transaction form for better visibility
     with st.expander("Quick Add Transaction", expanded=True):
-        with st.form("tx_form_main"):
+        with st.form("tx_form_main", clear_on_submit=True):
             main_tx_type = st.selectbox("Type", ["income", "expense", "investment"], key="main_type")
             main_tx_date = st.date_input("Date", value=datetime.today(), key="main_date")
             main_tx_amount = st.number_input("Amount", min_value=0.01, step=0.01, value=0.00, format="%.2f", key="main_amount")
