@@ -194,6 +194,33 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader("Transactions")
+    # Provide a main-area transaction form for better visibility
+    with st.expander("Quick Add Transaction", expanded=True):
+        with st.form("tx_form_main"):
+            main_tx_type = st.selectbox("Type", ["income", "expense", "investment"], key="main_type")
+            main_tx_date = st.date_input("Date", value=datetime.today(), key="main_date")
+            main_tx_amount = st.number_input("Amount", min_value=0.01, step=0.01, value=0.00, format="%.2f", key="main_amount")
+            main_tx_category = st.text_input("Category", value="General", key="main_category")
+            main_tx_note = st.text_area("Note (optional)", key="main_note")
+            main_submitted = st.form_submit_button("Add Transaction")
+            if main_submitted:
+                try:
+                    amt = float(main_tx_amount)
+                    if amt <= 0:
+                        st.warning("Amount must be a positive number")
+                    else:
+                        date_str = main_tx_date.isoformat()
+                        if main_tx_type == "income":
+                            tx = Income(date_str, amt, main_tx_category.strip(), main_tx_note.strip())
+                        elif main_tx_type == "expense":
+                            tx = Expense(date_str, amt, main_tx_category.strip(), main_tx_note.strip())
+                        else:
+                            tx = Investment(date_str, amt, main_tx_category.strip(), main_tx_note.strip())
+                        add_transaction(tx)
+                        st.success(f"{main_tx_type.title()} added: {amt} — {main_tx_category}")
+                        st.experimental_rerun()
+                except ValueError:
+                    st.error("Please enter a valid numeric amount")
     if df.empty:
         st.info("No transactions yet — add your first transaction from the sidebar.")
     else:
@@ -212,6 +239,21 @@ with col2:
         st.download_button("Download CSV", data=csv_bytes, file_name="transactions_export.csv", mime="text/csv")
     else:
         st.warning("No data to export")
+    # Sample / admin actions
+    st.markdown("---")
+    if st.button("Add sample transaction"):
+        # add a small sample expense for quick testing
+        tx = Expense(datetime.today().isoformat(), 99.99, "Test", "Quick sample")
+        add_transaction(tx)
+        st.success("Sample transaction added")
+        st.experimental_rerun()
+
+    st.write("\n")
+    if st.checkbox("I confirm clearing all data"):
+        if st.button("Clear all transactions"):
+            save_transactions([])
+            st.success("All transactions cleared")
+            st.experimental_rerun()
 
 # Statistics and Insights
 st.markdown("---")
