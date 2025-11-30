@@ -1,6 +1,7 @@
 [server]
 headless = true
-enableCORS = false
+# Keep XSRF protection enabled; set CORS true to avoid warning when connecting via dev tunnels
+enableCORS = true
 runOnSave = false
 
 [browser]

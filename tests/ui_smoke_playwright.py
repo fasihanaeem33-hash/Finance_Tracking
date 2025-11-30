@@ -44,15 +44,32 @@ with sync_playwright() as p:
         except Exception:
             pass
 
-        # Click the last Add Transaction button (sidebar + main exist)
+        # Click the Add Transaction button that is inside the main (left) column
         buttons = page.get_by_role('button', name='Add Transaction')
         count = buttons.count()
         if count == 0:
             print('No Add Transaction buttons found')
             browser.close()
             sys.exit(2)
-        # click the last one which should be the main form button
-        buttons.nth(count - 1).click()
+        clicked = False
+        for i in range(count):
+            try:
+                btn = buttons.nth(i)
+                if not btn.is_visible():
+                    continue
+                box = btn.bounding_box()
+                if not box:
+                    continue
+                # Heuristic: left column should have a smaller x coordinate (left side)
+                if box['x'] < 600:
+                    btn.click()
+                    clicked = True
+                    break
+            except Exception:
+                continue
+        if not clicked:
+            # fallback: click the last one
+            buttons.nth(count - 1).click()
 
         # Wait for the new category text to appear in the page after submit
         try:

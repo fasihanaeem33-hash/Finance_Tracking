@@ -1,350 +1,194 @@
 import streamlit as st
 import json
-from dataclasses import dataclass, asdict
-from datetime import datetime
-from typing import List, Dict
-import pandas as pd
 import os
+from datetime import date
+import pandas as pd
+import altair as alt
+from sklearn.linear_model import LinearRegression
+import numpy as np
 
-DATA_FILE = "transactions.json"
+# --------------------- CSS ---------------------
+st.markdown("""
+<style>
+body {background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%);}
+h1 {text-align:center; font-family: 'Segoe UI', sans-serif; color:#2a2a2a; font-weight:900;}
+.metric-card {padding:25px; border-radius:18px; color:white; font-weight:bold; text-align:center; margin-bottom:15px; font-size:20px; box-shadow:1px 4px 18px rgba(0,0,0,0.2); transition: transform 0.2s;}
+.metric-card:hover {transform: scale(1.05);}
+.income-card { background: linear-gradient(135deg, #00c853, #b9f6ca);}
+.expense-card { background: linear-gradient(135deg, #d50000, #ff8a80);}
+.invest-card { background: linear-gradient(135deg, #1a237e, #7986cb);}
+.balance-card { background: linear-gradient(135deg, #ff6d00, #ffd180);}
+.forecast-card { background: linear-gradient(135deg, #ff4081, #f8bbd0);}
+.sidebar .sidebar-header {color:#333333; font-weight:bold; font-size:18px; margin-bottom:5px;}
+</style>
+""", unsafe_allow_html=True)
 
-
-def seed_sample_data():
-    """Create some sample transactions when there's no existing file."""
-    if os.path.exists(DATA_FILE):
-        return
-    sample = [
-        Income(datetime.today().isoformat(), 5000.0, "Salary", "Monthly salary"),
-        Expense(datetime.today().replace(day=5).isoformat(), 1200.0, "Rent", "Monthly rent"),
-        Expense(datetime.today().replace(day=10).isoformat(), 150.0, "Groceries", "Weekly groceries"),
-        Expense(datetime.today().replace(day=15).isoformat(), 60.0, "Transport", "Gas & transit"),
-        Investment(datetime.today().replace(day=20).isoformat(), 300.0, "Stocks", "Monthly investment"),
-    ]
-    save_transactions([s.to_dict() for s in sample])
-
-# --------------------
-# Object-oriented model
-# --------------------
-@dataclass
+# --------------------- OOP ---------------------
 class Transaction:
-    date: str
-    amount: float
-    category: str
-    note: str = ""
-    type: str = "transaction"
+    def __init__(self, date, amount, category, note):
+        self.date = date
+        self.amount = amount
+        self.category = category
+        self.note = note
 
-    def to_dict(self):
-        return asdict(self)
+class Income(Transaction): type="income"
+class Expense(Transaction): type="expense"
+class Investment(Transaction): type="investment"
 
+# --------------------- Data ---------------------
+FILE = "finance_data.json"
+def load_data():
+    if os.path.exists(FILE):
+        with open(FILE, "r") as f:
+            return json.load(f)
+    return []
+def save_data(data):
+    with open(FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
-class Income(Transaction):
-    def __init__(self, date: str, amount: float, category: str, note: str = ""):
-        super().__init__(date, amount, category, note, type="income")
+data = load_data()
 
+# --------------------- Page ---------------------
+st.set_page_config(page_title="PFTS Dashboard", layout="wide")
+st.title("💸 PFTS – Personal Finance Tracking System")
 
-class Expense(Transaction):
-    def __init__(self, date: str, amount: float, category: str, note: str = ""):
-        super().__init__(date, amount, category, note, type="expense")
-
-
-class Investment(Transaction):
-    def __init__(self, date: str, amount: float, category: str, note: str = ""):
-        super().__init__(date, amount, category, note, type="investment")
-
-
-# --------------------
-# Data storage helpers
-# --------------------
-
-def load_transactions() -> List[Dict]:
-    if not os.path.exists(DATA_FILE):
-        return []
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
-    except Exception:
-        return []
-
-
-def save_transactions(transactions: List[Dict]):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(transactions, f, indent=2, ensure_ascii=False)
-
-
-# --------------------
-# Business logic
-# --------------------
-
-def add_transaction(tx: Transaction):
-    transactions = load_transactions()
-    transactions.append(tx.to_dict())
-    save_transactions(transactions)
-
-
-def transactions_to_df(transactions: List[Dict]) -> pd.DataFrame:
-    if not transactions:
-        return pd.DataFrame(columns=["date", "amount", "category", "note", "type"])
-
-    df = pd.DataFrame(transactions)
-    df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    return df
-
-
-def calculate_statistics(df: pd.DataFrame) -> Dict:
-    stats = {
-        "total_income": 0.0,
-        "total_expense": 0.0,
-        "total_investment": 0.0,
-        "net_balance": 0.0,
-        "savings_percentage": 0.0,
-    }
-    if df.empty:
-        return stats
-
-    stats["total_income"] = df[df["type"] == "income"]["amount"].sum()
-    stats["total_expense"] = df[df["type"] == "expense"]["amount"].sum()
-    stats["total_investment"] = df[df["type"] == "investment"]["amount"].sum()
-
-    stats["net_balance"] = stats["total_income"] - stats["total_expense"] - stats["total_investment"]
-
-    if stats["total_income"] > 0:
-        savings = stats["total_income"] - stats["total_expense"]
-        stats["savings_percentage"] = (savings / stats["total_income"]) * 100
-
-    return stats
-
-
-def analyze_categories(df: pd.DataFrame) -> Dict:
-    result = {
-        "highest_spending_category": None,
-        "most_frequent_category": None,
-        "unique_categories": set(),
-        "category_totals": {},
-    }
-
-    if df.empty:
-        return result
-
-    # Highest spending category (expenses only)
-    expense_df = df[df["type"] == "expense"]
-    if not expense_df.empty:
-        cat_totals = expense_df.groupby("category")["amount"].sum().to_dict()
-        result["category_totals"] = cat_totals
-        result["highest_spending_category"] = max(cat_totals.items(), key=lambda x: x[1])[0]
-
-    # Most frequent category overall
-    freq = df["category"].value_counts()
-    if not freq.empty:
-        result["most_frequent_category"] = freq.idxmax()
-
-    result["unique_categories"] = set(df["category"].unique().tolist())
-
-    return result
-
-
-# --------------------
-# Streamlit UI
-# --------------------
-
-st.set_page_config(page_title="Personal Finance Tracker", layout="wide")
-st.title("📊 Personal Finance Tracker")
-
-seed_sample_data()
-# Load data
-transactions = load_transactions()
-df = transactions_to_df(transactions)
-
-# Sidebar: Add transaction
-st.sidebar.header("Add a transaction")
-with st.sidebar.form("tx_form", clear_on_submit=True):
-    tx_type = st.selectbox("Type", ["income", "expense", "investment"])
-    tx_date = st.date_input("Date", value=datetime.today())
-    tx_amount = st.number_input("Amount", min_value=0.01, step=0.01, value=0.00, format="%.2f")
-    tx_category = st.text_input("Category", value="General")
-    tx_note = st.text_area("Note (optional)")
-
+# --------------------- Sidebar: Add Transaction ---------------------
+st.sidebar.markdown("### ➕ Add Transaction")
+with st.sidebar.form("entry_form"):
+    t_type = st.selectbox("Transaction Type", ["Income","Expense","Investment"])
+    t_date = st.date_input("Date", date.today())
+    t_amount = st.number_input("Amount", min_value=1.0, format="%.2f")
+    t_category = st.text_input("Category")
+    t_note = st.text_area("Note (optional)")
     submitted = st.form_submit_button("Add Transaction")
-
     if submitted:
-        try:
-            amount_val = float(tx_amount)
-            if amount_val <= 0:
-                st.warning("Amount must be a positive number")
-            else:
-                date_str = tx_date.isoformat()
+        if t_type=="Income": obj=Income(str(t_date), t_amount, t_category, t_note)
+        elif t_type=="Expense": obj=Expense(str(t_date), t_amount, t_category, t_note)
+        else: obj=Investment(str(t_date), t_amount, t_category, t_note)
+        entry={"type":obj.type,"date":obj.date,"amount":obj.amount,"category":obj.category,"note":obj.note}
+        data.append(entry)
+        save_data(data)
+        st.success("✅ Transaction Added!")
 
-                if tx_type == "income":
-                    tx = Income(date_str, amount_val, tx_category.strip(), tx_note.strip())
-                elif tx_type == "expense":
-                    tx = Expense(date_str, amount_val, tx_category.strip(), tx_note.strip())
-                else:
-                    tx = Investment(date_str, amount_val, tx_category.strip(), tx_note.strip())
+# --------------------- Sidebar: CSV Upload/Download ---------------------
+st.sidebar.markdown("### 📤 Upload / Download CSV")
+uploaded_file = st.sidebar.file_uploader("Upload CSV", type=["csv"])
+if uploaded_file:
+    new_df = pd.read_csv(uploaded_file)
+    data.extend(new_df.to_dict(orient="records"))
+    save_data(data)
+    st.sidebar.success("✅ CSV Imported!")
 
-                add_transaction(tx)
-                st.success(f"{tx_type.title()} added: {amount_val} — {tx_category}")
-                st.experimental_rerun()
+# --------------------- Sidebar: Filters ---------------------
+st.sidebar.markdown("### 🔍 Filters")
+df = pd.DataFrame(data)
+if df.empty: df=pd.DataFrame(columns=["type","date","amount","category","note"])
+df["date"]=pd.to_datetime(df["date"])
+type_filter=st.sidebar.multiselect("Transaction Type", options=df["type"].unique(), default=df["type"].unique())
+category_filter=st.sidebar.multiselect("Category", options=df["category"].unique(), default=df["category"].unique())
+min_date=df["date"].min() if not df.empty else pd.to_datetime("2020-01-01")
+max_date=df["date"].max() if not df.empty else pd.to_datetime(date.today())
+date_filter=st.sidebar.date_input("Date Range",[min_date,max_date])
 
-        except ValueError:
-            st.error("Please enter a valid numeric amount")
+filtered_df=df[
+    (df["type"].isin(type_filter)) &
+    (df["category"].isin(category_filter)) &
+    (df["date"]>=pd.to_datetime(date_filter[0])) &
+    (df["date"]<=pd.to_datetime(date_filter[1]))
+]
 
-# Main layout
-col1, col2 = st.columns([2, 1])
+# CSV Download
+csv_export=filtered_df.to_csv(index=False).encode("utf-8")
+st.sidebar.download_button("📥 Download Transactions CSV", data=csv_export, file_name="transactions.csv", mime="text/csv")
 
-with col1:
-    st.subheader("Transactions")
-    # Provide a main-area transaction form for better visibility
-    with st.expander("Quick Add Transaction", expanded=True):
-        with st.form("tx_form_main", clear_on_submit=True):
-            main_tx_type = st.selectbox("Type", ["income", "expense", "investment"], key="main_type")
-            main_tx_date = st.date_input("Date", value=datetime.today(), key="main_date")
-            main_tx_amount = st.number_input("Amount", min_value=0.01, step=0.01, value=0.00, format="%.2f", key="main_amount")
-            main_tx_category = st.text_input("Category", value="General", key="main_category")
-            main_tx_note = st.text_area("Note (optional)", key="main_note")
-            main_submitted = st.form_submit_button("Add Transaction")
-            if main_submitted:
-                try:
-                    amt = float(main_tx_amount)
-                    if amt <= 0:
-                        st.warning("Amount must be a positive number")
-                    else:
-                        date_str = main_tx_date.isoformat()
-                        if main_tx_type == "income":
-                            tx = Income(date_str, amt, main_tx_category.strip(), main_tx_note.strip())
-                        elif main_tx_type == "expense":
-                            tx = Expense(date_str, amt, main_tx_category.strip(), main_tx_note.strip())
-                        else:
-                            tx = Investment(date_str, amt, main_tx_category.strip(), main_tx_note.strip())
-                        add_transaction(tx)
-                        st.success(f"{main_tx_type.title()} added: {amt} — {main_tx_category}")
-                        st.experimental_rerun()
-                except ValueError:
-                    st.error("Please enter a valid numeric amount")
-    if df.empty:
-        st.info("No transactions yet — add your first transaction from the sidebar.")
+# --------------------- Metrics ---------------------
+total_income=filtered_df[filtered_df["type"]=="income"]["amount"].sum()
+total_expense=filtered_df[filtered_df["type"]=="expense"]["amount"].sum()
+total_invest=filtered_df[filtered_df["type"]=="investment"]["amount"].sum()
+balance=total_income-total_expense
+
+col1,col2,col3,col4=st.columns(4)
+col1.markdown(f"<div class='metric-card income-card'>💰 Income<br>₹ {total_income:.2f}</div>",unsafe_allow_html=True)
+col2.markdown(f"<div class='metric-card expense-card'>🛒 Expenses<br>₹ {total_expense:.2f}</div>",unsafe_allow_html=True)
+col3.markdown(f"<div class='metric-card invest-card'>📈 Investment<br>₹ {total_invest:.2f}</div>",unsafe_allow_html=True)
+col4.markdown(f"<div class='metric-card balance-card'>💵 Balance<br>₹ {balance:.2f}</div>",unsafe_allow_html=True)
+
+# --------------------- Pie Chart ---------------------
+st.subheader("📊 Income vs Expenses Pie Chart")
+if total_income+total_expense>0:
+    pie_df=pd.DataFrame({"Type":["Income","Expenses"],"Amount":[total_income,total_expense]})
+    pie_chart=alt.Chart(pie_df).mark_arc(innerRadius=50).encode(
+        theta="Amount", color="Type", tooltip=["Type","Amount"]
+    )
+    st.altair_chart(pie_chart,use_container_width=True)
+else: st.info("No data yet to show pie chart.")
+
+# --------------------- Category Bar Chart ---------------------
+st.subheader("📊 Category Wise Spending")
+if not filtered_df.empty and filtered_df["amount"].sum()>0:
+    category_totals=filtered_df.groupby("category")["amount"].sum().reset_index()
+    bar_chart=alt.Chart(category_totals).mark_bar().encode(
+        x="category", y="amount", color="category", tooltip=["category","amount"]
+    )
+    st.altair_chart(bar_chart,use_container_width=True)
+else: st.info("No data for category chart yet.")
+
+# --------------------- Monthly Trend ---------------------
+st.subheader("📈 Monthly Trend")
+if not filtered_df.empty:
+    filtered_df["month"]=filtered_df["date"].dt.to_period("M").astype(str)
+    monthly_summary=filtered_df.groupby(["month","type"])["amount"].sum().reset_index()
+    line_chart=alt.Chart(monthly_summary).mark_line(point=True).encode(
+        x="month", y="amount", color="type", tooltip=["month","type","amount"]
+    )
+    st.altair_chart(line_chart,use_container_width=True)
+else:
+    st.info("No data for monthly trends yet.")
+
+# --------------------- Forecast Next Month ---------------------
+st.subheader("🔮 Forecast Next Month")
+forecast_data=[]
+for t in ["income","expense"]:
+    temp=monthly_summary[monthly_summary["type"]==t].copy() if not filtered_df.empty else pd.DataFrame()
+    if len(temp)>1:
+        temp["month_num"]=range(len(temp))
+        X=temp[["month_num"]]
+        y=temp["amount"]
+        model=LinearRegression().fit(X,y)
+        next_month_num=np.array([[len(temp)]])
+        pred=int(model.predict(next_month_num)[0])
+        forecast_data.append((t,pred))
     else:
-        display_df = df.copy()
-        display_df["date"] = display_df["date"].dt.date
-        st.dataframe(display_df.sort_values(by="date", ascending=False).reset_index(drop=True))
+        forecast_data.append((t,temp["amount"].sum() if not temp.empty else 0))
 
-with col2:
-    st.subheader("Quick Actions")
-    if st.button("Reload Data"):
-        st.experimental_rerun()
+forecast_income=[x[1] for x in forecast_data if x[0]=="income"][0]
+forecast_expense=[x[1] for x in forecast_data if x[0]=="expense"][0]
+forecast_balance=forecast_income-forecast_expense
 
-    # Always show CSV export if data exists
-    if not df.empty:
-        csv_bytes = df.to_csv(index=False).encode("utf-8")
-        st.download_button("Download CSV", data=csv_bytes, file_name="transactions_export.csv", mime="text/csv")
+col1,col2,col3=st.columns(3)
+col1.markdown(f"<div class='metric-card forecast-card'>📈 Forecast Income<br>₹ {forecast_income:.2f}</div>",unsafe_allow_html=True)
+col2.markdown(f"<div class='metric-card forecast-card'>📉 Forecast Expense<br>₹ {forecast_expense:.2f}</div>",unsafe_allow_html=True)
+col3.markdown(f"<div class='metric-card forecast-card'>💵 Forecast Balance<br>₹ {forecast_balance:.2f}</div>",unsafe_allow_html=True)
+
+# --------------------- Savings Goal ---------------------
+st.subheader("🎯 Savings Goal")
+goal=st.slider("Set Monthly Savings Goal (%)",1,80,20)
+if total_income>0:
+    savings_pct=(balance/total_income)*100
+    if savings_pct>=goal:
+        st.success(f"Great! You saved {savings_pct:.2f}% – above your goal 🎉")
     else:
-        st.warning("No data to export")
-    # Sample / admin actions
-    st.markdown("---")
-    if st.button("Add sample transaction"):
-        # add a small sample expense for quick testing
-        tx = Expense(datetime.today().isoformat(), 99.99, "Test", "Quick sample")
-        add_transaction(tx)
-        st.success("Sample transaction added")
-        st.experimental_rerun()
+        st.warning(f"You saved {savings_pct:.2f}% – below your goal 😟")
+else: st.info("Add income to calculate savings goal.")
 
-    st.write("\n")
-    if st.checkbox("I confirm clearing all data"):
-        if st.button("Clear all transactions"):
-            save_transactions([])
-            st.success("All transactions cleared")
-            st.experimental_rerun()
+# --------------------- String Analysis ---------------------
+categories_set=set(filtered_df["category"].unique())
+joined=", ".join(categories_set).upper()
+count_a=joined.count("A")
+st.subheader("🔤 Category Name Analysis")
+st.write(f"**All categories (uppercase):** {joined}")
+st.write(f"**Number of 'A' letters:** {count_a}")
 
-# Statistics and Insights
-st.markdown("---")
-stats = calculate_statistics(df)
-insights = analyze_categories(df)
-
-left, right = st.columns(2)
-with left:
-    st.subheader("Summary Statistics")
-    st.metric("Total Income", f"{stats['total_income']:.2f}")
-    st.metric("Total Expense", f"{stats['total_expense']:.2f}")
-    st.metric("Total Investment", f"{stats['total_investment']:.2f}")
-    st.metric("Net Balance", f"{stats['net_balance']:.2f}")
-    st.metric("Savings %", f"{stats['savings_percentage']:.1f}%")
-
-with right:
-    st.subheader("Category Insights")
-    st.write("Highest spending category:", insights["highest_spending_category"] or "—")
-    st.write("Most frequent category:", insights["most_frequent_category"] or "—")
-    st.write("Unique categories:")
-    st.write(sorted(list(insights["unique_categories"] if insights["unique_categories"] else [])))
-
-# Category totals chart
-st.subheader("Category-wise Expense Totals")
-if insights["category_totals"]:
-    cat_df = pd.DataFrame(list(insights["category_totals"].items()), columns=["category", "amount"])
-    cat_df = cat_df.sort_values(by="amount", ascending=False)
-    st.bar_chart(cat_df.set_index("category"))
-else:
-    st.info("No expense category totals to display")
-
-# Monthly totals and time series
-st.markdown("---")
-st.subheader("Monthly totals (income / expense / investment)")
-if not df.empty:
-    # monthly grouping - avoid modifying the main df; drop rows without valid date
-    df_month = df.dropna(subset=["date"]).copy()
-    df_month['month'] = df_month['date'].dt.to_period('M').dt.to_timestamp()
-    monthly = df_month.groupby(['month', 'type'])['amount'].sum().unstack(fill_value=0)
-    st.line_chart(monthly)
-else:
-    st.info("No data for monthly totals")
-
-st.markdown("---")
-st.subheader("Category breakdown (expenses)")
-if insights["category_totals"]:
-    pie_df = pd.DataFrame(list(insights['category_totals'].items()), columns=['category','amount'])
-    pie_df = pie_df.sort_values(by='amount', ascending=False)
-    # use st.bar_chart and st.pyplot (simple inline) — keep it simple
-    st.bar_chart(pie_df.set_index('category'))
-else:
-    st.info("No expenses yet to show a category breakdown")
-
-st.markdown("---")
-st.subheader("Savings Goal")
-goal_percent = st.slider("Monthly savings goal (% of income)", 0, 100, 20)
-
-if stats["total_income"] <= 0:
-    st.warning("No income recorded yet — cannot evaluate goal")
-else:
-    actual = round(stats["savings_percentage"], 2)
-    st.write(f"Actual savings: {actual}% of income")
-
-    if actual >= goal_percent:
-        if actual >= goal_percent + 10:
-            st.success(f"Amazing! You're well above your goal by {actual - goal_percent:.2f}%")
-        else:
-            st.success(f"Great job — you've met your goal by {actual - goal_percent:.2f}%")
-    else:
-        shortfall = goal_percent - actual
-        if shortfall > 20:
-            st.error(f"Significant shortfall: Increase savings by {shortfall:.2f}%")
-        else:
-            st.warning(f"You're under the goal by {shortfall:.2f}%. Try reducing expenses.")
-
-# Category string analysis
-st.markdown("---")
-st.subheader("Category Name String Analysis")
-cat_set = insights["unique_categories"] or set()
-joined = ", ".join(sorted(cat_set))
-joined_upper = joined.upper()
-count_A = joined_upper.count("A")
-
-st.write("Joined categories:", joined)
-st.write("Uppercase:", joined_upper)
-st.write("Number of letter 'A' in joined string:", count_A)
-
-# Footer
-st.markdown("---")
-st.write("Tip: Data is stored locally in `transactions.json`. Keep a backup if needed.")
-
-# Raw JSON viewer
-with st.expander("Raw stored JSON"):
-    st.write(transactions)
+# --------------------- Raw Table ---------------------
+st.subheader("📄 Filtered Transactions")
+st.dataframe(filtered_df)

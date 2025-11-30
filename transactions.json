@@ -1,0 +1,37 @@
+[
+  {
+    "date": "2025-11-30T14:34:16.796810",
+    "amount": 5000.0,
+    "category": "Salary",
+    "note": "Monthly salary",
+    "type": "income"
+  },
+  {
+    "date": "2025-11-05T14:34:16.813758",
+    "amount": 1200.0,
+    "category": "Rent",
+    "note": "Monthly rent",
+    "type": "expense"
+  },
+  {
+    "date": "2025-11-10T14:34:16.813831",
+    "amount": 150.0,
+    "category": "Groceries",
+    "note": "Weekly groceries",
+    "type": "expense"
+  },
+  {
+    "date": "2025-11-15T14:34:16.813890",
+    "amount": 60.0,
+    "category": "Transport",
+    "note": "Gas & transit",
+    "type": "expense"
+  },
+  {
+    "date": "2025-11-20T14:34:16.813923",
+    "amount": 300.0,
+    "category": "Stocks",
+    "note": "Monthly investment",
+    "type": "investment"
+  }
+]

@@ -1,0 +1,394 @@
+[
+  {
+    "type": "income",
+    "date": "2025-11-30",
+    "amount": 2500000.0,
+    "category": "Freelancer",
+    "note": ""
+  },
+  {
+    "type": "investment",
+    "date": "2025-11-30",
+    "amount": 250000.0,
+    "category": "Shares",
+    "note": ""
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-30",
+    "amount": 15000.0,
+    "category": "Grocery",
+    "note": ""
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-30",
+    "amount": 4500.0,
+    "category": "Conveyance",
+    "note": ""
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-30",
+    "amount": 6000.0,
+    "category": "Fee",
+    "note": ""
+  },
+  {
+    "type": "investment",
+    "date": "2025-11-30",
+    "amount": 10000.0,
+    "category": "MZBL",
+    "note": ""
+  },
+  {
+    "type": "income",
+    "date": "2025-11-30",
+    "amount": 450000.0,
+    "category": "Salary",
+    "note": ""
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-30",
+    "amount": 35000.0,
+    "category": "Medical",
+    "note": ""
+  },
+  {
+    "type": "income",
+    "date": "2025-09-01",
+    "amount": 5000,
+    "category": "Salary",
+    "note": "September Salary"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-10",
+    "amount": 200,
+    "category": "Freelance",
+    "note": "Website design"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-20",
+    "amount": 1000,
+    "category": "Bonus",
+    "note": "Project bonus"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-05",
+    "amount": 50,
+    "category": "Groceries",
+    "note": "Weekly groceries"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-12",
+    "amount": 30,
+    "category": "Transport",
+    "note": "Taxi fare"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-18",
+    "amount": 120,
+    "category": "Entertainment",
+    "note": "Movie and snacks"
+  },
+  {
+    "type": "investment",
+    "date": "2025-09-03",
+    "amount": 300,
+    "category": "Stocks",
+    "note": "Invested in AAPL"
+  },
+  {
+    "type": "investment",
+    "date": "2025-09-08",
+    "amount": 200,
+    "category": "Mutual Fund",
+    "note": "Monthly SIP"
+  },
+  {
+    "type": "income",
+    "date": "2025-10-01",
+    "amount": 5200,
+    "category": "Salary",
+    "note": "October Salary"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-05",
+    "amount": 60,
+    "category": "Utilities",
+    "note": "Electricity bill"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-12",
+    "amount": 40,
+    "category": "Restaurants",
+    "note": "Dinner out"
+  },
+  {
+    "type": "income",
+    "date": "2025-10-15",
+    "amount": 5500,
+    "category": "Salary",
+    "note": "October Salary"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-20",
+    "amount": 70,
+    "category": "Transport",
+    "note": "Bus fare"
+  },
+  {
+    "type": "investment",
+    "date": "2025-10-25",
+    "amount": 250,
+    "category": "Stocks",
+    "note": "Invested in TSLA"
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-05",
+    "amount": 80,
+    "category": "Entertainment",
+    "note": "Cinema tickets"
+  },
+  {
+    "type": "income",
+    "date": "2025-11-15",
+    "amount": 1000,
+    "category": "Bonus",
+    "note": "Project bonus"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-01",
+    "amount": 5000,
+    "category": "Salary",
+    "note": "September Salary"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-10",
+    "amount": 200,
+    "category": "Freelance",
+    "note": "Website design"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-20",
+    "amount": 1000,
+    "category": "Bonus",
+    "note": "Project bonus"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-05",
+    "amount": 50,
+    "category": "Groceries",
+    "note": "Weekly groceries"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-12",
+    "amount": 30,
+    "category": "Transport",
+    "note": "Taxi fare"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-18",
+    "amount": 120,
+    "category": "Entertainment",
+    "note": "Movie and snacks"
+  },
+  {
+    "type": "investment",
+    "date": "2025-09-03",
+    "amount": 300,
+    "category": "Stocks",
+    "note": "Invested in AAPL"
+  },
+  {
+    "type": "investment",
+    "date": "2025-09-08",
+    "amount": 200,
+    "category": "Mutual Fund",
+    "note": "Monthly SIP"
+  },
+  {
+    "type": "income",
+    "date": "2025-10-01",
+    "amount": 5200,
+    "category": "Salary",
+    "note": "October Salary"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-05",
+    "amount": 60,
+    "category": "Utilities",
+    "note": "Electricity bill"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-12",
+    "amount": 40,
+    "category": "Restaurants",
+    "note": "Dinner out"
+  },
+  {
+    "type": "income",
+    "date": "2025-10-15",
+    "amount": 5500,
+    "category": "Salary",
+    "note": "October Salary"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-20",
+    "amount": 70,
+    "category": "Transport",
+    "note": "Bus fare"
+  },
+  {
+    "type": "investment",
+    "date": "2025-10-25",
+    "amount": 250,
+    "category": "Stocks",
+    "note": "Invested in TSLA"
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-05",
+    "amount": 80,
+    "category": "Entertainment",
+    "note": "Cinema tickets"
+  },
+  {
+    "type": "income",
+    "date": "2025-11-15",
+    "amount": 1000,
+    "category": "Bonus",
+    "note": "Project bonus"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-01",
+    "amount": 5000,
+    "category": "Salary",
+    "note": "September Salary"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-10",
+    "amount": 200,
+    "category": "Freelance",
+    "note": "Website design"
+  },
+  {
+    "type": "income",
+    "date": "2025-09-20",
+    "amount": 1000,
+    "category": "Bonus",
+    "note": "Project bonus"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-05",
+    "amount": 50,
+    "category": "Groceries",
+    "note": "Weekly groceries"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-12",
+    "amount": 30,
+    "category": "Transport",
+    "note": "Taxi fare"
+  },
+  {
+    "type": "expense",
+    "date": "2025-09-18",
+    "amount": 120,
+    "category": "Entertainment",
+    "note": "Movie and snacks"
+  },
+  {
+    "type": "investment",
+    "date": "2025-09-03",
+    "amount": 300,
+    "category": "Stocks",
+    "note": "Invested in AAPL"
+  },
+  {
+    "type": "investment",
+    "date": "2025-09-08",
+    "amount": 200,
+    "category": "Mutual Fund",
+    "note": "Monthly SIP"
+  },
+  {
+    "type": "income",
+    "date": "2025-10-01",
+    "amount": 5200,
+    "category": "Salary",
+    "note": "October Salary"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-05",
+    "amount": 60,
+    "category": "Utilities",
+    "note": "Electricity bill"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-12",
+    "amount": 40,
+    "category": "Restaurants",
+    "note": "Dinner out"
+  },
+  {
+    "type": "income",
+    "date": "2025-10-15",
+    "amount": 5500,
+    "category": "Salary",
+    "note": "October Salary"
+  },
+  {
+    "type": "expense",
+    "date": "2025-10-20",
+    "amount": 70,
+    "category": "Transport",
+    "note": "Bus fare"
+  },
+  {
+    "type": "investment",
+    "date": "2025-10-25",
+    "amount": 250,
+    "category": "Stocks",
+    "note": "Invested in TSLA"
+  },
+  {
+    "type": "expense",
+    "date": "2025-11-05",
+    "amount": 80,
+    "category": "Entertainment",
+    "note": "Cinema tickets"
+  },
+  {
+    "type": "income",
+    "date": "2025-11-15",
+    "amount": 1000,
+    "category": "Bonus",
+    "note": "Project bonus"
+  }
+]
