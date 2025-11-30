@@ -8,6 +8,20 @@ import os
 
 DATA_FILE = "transactions.json"
 
+
+def seed_sample_data():
+    """Create some sample transactions when there's no existing file."""
+    if os.path.exists(DATA_FILE):
+        return
+    sample = [
+        Income(datetime.today().isoformat(), 5000.0, "Salary", "Monthly salary"),
+        Expense(datetime.today().replace(day=5).isoformat(), 1200.0, "Rent", "Monthly rent"),
+        Expense(datetime.today().replace(day=10).isoformat(), 150.0, "Groceries", "Weekly groceries"),
+        Expense(datetime.today().replace(day=15).isoformat(), 60.0, "Transport", "Gas & transit"),
+        Investment(datetime.today().replace(day=20).isoformat(), 300.0, "Stocks", "Monthly investment"),
+    ]
+    save_transactions([s.to_dict() for s in sample])
+
 # --------------------
 # Object-oriented model
 # --------------------
@@ -137,6 +151,7 @@ def analyze_categories(df: pd.DataFrame) -> Dict:
 st.set_page_config(page_title="Personal Finance Tracker", layout="wide")
 st.title("📊 Personal Finance Tracker")
 
+seed_sample_data()
 # Load data
 transactions = load_transactions()
 df = transactions_to_df(transactions)
@@ -146,7 +161,7 @@ st.sidebar.header("Add a transaction")
 with st.sidebar.form("tx_form"):
     tx_type = st.selectbox("Type", ["income", "expense", "investment"])
     tx_date = st.date_input("Date", value=datetime.today())
-    tx_amount = st.text_input("Amount", value="0.00")
+    tx_amount = st.number_input("Amount", min_value=0.01, step=0.01, value=0.00, format="%.2f")
     tx_category = st.text_input("Category", value="General")
     tx_note = st.text_area("Note (optional)")
 
@@ -169,7 +184,7 @@ with st.sidebar.form("tx_form"):
 
                 add_transaction(tx)
                 st.success(f"{tx_type.title()} added: {amount_val} — {tx_category}")
-                st.rerun()
+                st.experimental_rerun()
 
         except ValueError:
             st.error("Please enter a valid numeric amount")
@@ -189,16 +204,14 @@ with col1:
 with col2:
     st.subheader("Quick Actions")
     if st.button("Reload Data"):
-        st.rerun()
+        st.experimental_rerun()
 
-    if st.button("Export to CSV"):
-        if not df.empty:
-            csv_bytes = df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "Download CSV", data=csv_bytes, file_name="transactions_export.csv", mime="text/csv"
-            )
-        else:
-            st.warning("No data to export")
+    # Always show CSV export if data exists
+    if not df.empty:
+        csv_bytes = df.to_csv(index=False).encode("utf-8")
+        st.download_button("Download CSV", data=csv_bytes, file_name="transactions_export.csv", mime="text/csv")
+    else:
+        st.warning("No data to export")
 
 # Statistics and Insights
 st.markdown("---")
@@ -219,7 +232,7 @@ with right:
     st.write("Highest spending category:", insights["highest_spending_category"] or "—")
     st.write("Most frequent category:", insights["most_frequent_category"] or "—")
     st.write("Unique categories:")
-    st.write(sorted(list(insights["unique_categories"])))
+    st.write(sorted(list(insights["unique_categories"] if insights["unique_categories"] else [])))
 
 # Category totals chart
 st.subheader("Category-wise Expense Totals")
@@ -230,7 +243,28 @@ if insights["category_totals"]:
 else:
     st.info("No expense category totals to display")
 
-# Savings Goal
+# Monthly totals and time series
+st.markdown("---")
+st.subheader("Monthly totals (income / expense / investment)")
+if not df.empty:
+    # monthly grouping - avoid modifying the main df; drop rows without valid date
+    df_month = df.dropna(subset=["date"]).copy()
+    df_month['month'] = df_month['date'].dt.to_period('M').dt.to_timestamp()
+    monthly = df_month.groupby(['month', 'type'])['amount'].sum().unstack(fill_value=0)
+    st.line_chart(monthly)
+else:
+    st.info("No data for monthly totals")
+
+st.markdown("---")
+st.subheader("Category breakdown (expenses)")
+if insights["category_totals"]:
+    pie_df = pd.DataFrame(list(insights['category_totals'].items()), columns=['category','amount'])
+    pie_df = pie_df.sort_values(by='amount', ascending=False)
+    # use st.bar_chart and st.pyplot (simple inline) — keep it simple
+    st.bar_chart(pie_df.set_index('category'))
+else:
+    st.info("No expenses yet to show a category breakdown")
+
 st.markdown("---")
 st.subheader("Savings Goal")
 goal_percent = st.slider("Monthly savings goal (% of income)", 0, 100, 20)
