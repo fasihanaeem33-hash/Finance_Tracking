@@ -48,9 +48,7 @@ def load_transactions() -> List[Dict]:
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
-            if isinstance(data, list):
-                return data
-            return []
+            return data if isinstance(data, list) else []
     except Exception:
         return []
 
@@ -73,10 +71,10 @@ def add_transaction(tx: Transaction):
 def transactions_to_df(transactions: List[Dict]) -> pd.DataFrame:
     if not transactions:
         return pd.DataFrame(columns=["date", "amount", "category", "note", "type"])
+
     df = pd.DataFrame(transactions)
-    # Normalize and ensure types
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0.0)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
 
 
@@ -91,16 +89,15 @@ def calculate_statistics(df: pd.DataFrame) -> Dict:
     if df.empty:
         return stats
 
-    stats["total_income"] = df[df.type == "income"]["amount"].sum()
-    stats["total_expense"] = df[df.type == "expense"]["amount"].sum()
-    stats["total_investment"] = df[df.type == "investment"]["amount"].sum()
+    stats["total_income"] = df[df["type"] == "income"]["amount"].sum()
+    stats["total_expense"] = df[df["type"] == "expense"]["amount"].sum()
+    stats["total_investment"] = df[df["type"] == "investment"]["amount"].sum()
+
     stats["net_balance"] = stats["total_income"] - stats["total_expense"] - stats["total_investment"]
 
     if stats["total_income"] > 0:
         savings = stats["total_income"] - stats["total_expense"]
         stats["savings_percentage"] = (savings / stats["total_income"]) * 100
-    else:
-        stats["savings_percentage"] = 0.0
 
     return stats
 
@@ -112,25 +109,24 @@ def analyze_categories(df: pd.DataFrame) -> Dict:
         "unique_categories": set(),
         "category_totals": {},
     }
+
     if df.empty:
         return result
 
-    # Consider expenses for highest spending
-    expense_df = df[df.type == "expense"]
+    # Highest spending category (expenses only)
+    expense_df = df[df["type"] == "expense"]
     if not expense_df.empty:
         cat_totals = expense_df.groupby("category")["amount"].sum().to_dict()
         result["category_totals"] = cat_totals
         result["highest_spending_category"] = max(cat_totals.items(), key=lambda x: x[1])[0]
-    else:
-        result["category_totals"] = {}
 
-    # Most frequent category across all transactions
-    if not df.empty:
-        freq = df["category"].value_counts()
-        if not freq.empty:
-            result["most_frequent_category"] = freq.idxmax()
+    # Most frequent category overall
+    freq = df["category"].value_counts()
+    if not freq.empty:
+        result["most_frequent_category"] = freq.idxmax()
 
     result["unique_categories"] = set(df["category"].unique().tolist())
+
     return result
 
 
@@ -153,17 +149,17 @@ with st.sidebar.form("tx_form"):
     tx_amount = st.text_input("Amount", value="0.00")
     tx_category = st.text_input("Category", value="General")
     tx_note = st.text_area("Note (optional)")
+
     submitted = st.form_submit_button("Add Transaction")
 
     if submitted:
-        # Input validation
         try:
             amount_val = float(tx_amount)
             if amount_val <= 0:
                 st.warning("Amount must be a positive number")
             else:
-                # format date to ISO
                 date_str = tx_date.isoformat()
+
                 if tx_type == "income":
                     tx = Income(date_str, amount_val, tx_category.strip(), tx_note.strip())
                 elif tx_type == "expense":
@@ -173,7 +169,8 @@ with st.sidebar.form("tx_form"):
 
                 add_transaction(tx)
                 st.success(f"{tx_type.title()} added: {amount_val} — {tx_category}")
-                st.experimental_rerun()
+                st.rerun()
+
         except ValueError:
             st.error("Please enter a valid numeric amount")
 
@@ -185,7 +182,6 @@ with col1:
     if df.empty:
         st.info("No transactions yet — add your first transaction from the sidebar.")
     else:
-        # show dataframe
         display_df = df.copy()
         display_df["date"] = display_df["date"].dt.date
         st.dataframe(display_df.sort_values(by="date", ascending=False).reset_index(drop=True))
@@ -193,16 +189,18 @@ with col1:
 with col2:
     st.subheader("Quick Actions")
     if st.button("Reload Data"):
-        st.experimental_rerun()
+        st.rerun()
+
     if st.button("Export to CSV"):
-        # create CSV
         if not df.empty:
             csv_bytes = df.to_csv(index=False).encode("utf-8")
-            st.download_button("Download CSV", data=csv_bytes, file_name="transactions_export.csv", mime="text/csv")
+            st.download_button(
+                "Download CSV", data=csv_bytes, file_name="transactions_export.csv", mime="text/csv"
+            )
         else:
             st.warning("No data to export")
 
-# Statistics and insights
+# Statistics and Insights
 st.markdown("---")
 stats = calculate_statistics(df)
 insights = analyze_categories(df)
@@ -218,56 +216,47 @@ with left:
 
 with right:
     st.subheader("Category Insights")
-    if insights["highest_spending_category"]:
-        st.write("Highest spending category:", insights["highest_spending_category"])
-    else:
-        st.write("Highest spending category: —")
-
-    if insights["most_frequent_category"]:
-        st.write("Most frequent category:", insights["most_frequent_category"])
-    else:
-        st.write("Most frequent category: —")
-
+    st.write("Highest spending category:", insights["highest_spending_category"] or "—")
+    st.write("Most frequent category:", insights["most_frequent_category"] or "—")
     st.write("Unique categories:")
     st.write(sorted(list(insights["unique_categories"])))
 
-# Category totals bar chart (use expense totals)
+# Category totals chart
 st.subheader("Category-wise Expense Totals")
 if insights["category_totals"]:
-    cat_df = pd.DataFrame(list(insights["category_totals"].items()), columns=["category", "amount"]) 
+    cat_df = pd.DataFrame(list(insights["category_totals"].items()), columns=["category", "amount"])
     cat_df = cat_df.sort_values(by="amount", ascending=False)
     st.bar_chart(cat_df.set_index("category"))
 else:
     st.info("No expense category totals to display")
 
-# Goal evaluation
+# Savings Goal
 st.markdown("---")
 st.subheader("Savings Goal")
-goal_percent = st.slider("Monthly savings goal (% of income)", min_value=0, max_value=100, value=20)
+goal_percent = st.slider("Monthly savings goal (% of income)", 0, 100, 20)
 
-# Nested conditional statements to compare actual savings to goal
 if stats["total_income"] <= 0:
     st.warning("No income recorded yet — cannot evaluate goal")
 else:
-    actual_savings_percent = round(stats["savings_percentage"], 2)
-    st.write(f"Actual savings: {actual_savings_percent}% of income")
+    actual = round(stats["savings_percentage"], 2)
+    st.write(f"Actual savings: {actual}% of income")
 
-    if actual_savings_percent >= goal_percent:
-        if actual_savings_percent >= goal_percent + 10:
-            st.success(f"Great job! You're well above your goal by {actual_savings_percent - goal_percent:.2f}%")
+    if actual >= goal_percent:
+        if actual >= goal_percent + 10:
+            st.success(f"Amazing! You're well above your goal by {actual - goal_percent:.2f}%")
         else:
-            st.success(f"Good — you've met your goal: {actual_savings_percent - goal_percent:.2f}% above the target")
+            st.success(f"Great job — you've met your goal by {actual - goal_percent:.2f}%")
     else:
-        shortfall = goal_percent - actual_savings_percent
+        shortfall = goal_percent - actual
         if shortfall > 20:
-            st.error(f"Significant shortfall: you need to increase savings by {shortfall:.2f}%")
+            st.error(f"Significant shortfall: Increase savings by {shortfall:.2f}%")
         else:
-            st.warning(f"You're under the goal by {shortfall:.2f}%. Consider reducing expenses or increasing income.")
+            st.warning(f"You're under the goal by {shortfall:.2f}%. Try reducing expenses.")
 
-# String analysis of categories
+# Category string analysis
 st.markdown("---")
 st.subheader("Category Name String Analysis")
-cat_set = insights["unique_categories"] if insights["unique_categories"] else set()
+cat_set = insights["unique_categories"] or set()
 joined = ", ".join(sorted(cat_set))
 joined_upper = joined.upper()
 count_A = joined_upper.count("A")
@@ -276,10 +265,10 @@ st.write("Joined categories:", joined)
 st.write("Uppercase:", joined_upper)
 st.write("Number of letter 'A' in joined string:", count_A)
 
-# Footer / helpful tips
+# Footer
 st.markdown("---")
-st.write("Tip: Transactions are stored locally in `transactions.json`. Back up the file if you want to move data between machines.")
+st.write("Tip: Data is stored locally in `transactions.json`. Keep a backup if needed.")
 
-# Show raw JSON optionally
+# Raw JSON viewer
 with st.expander("Raw stored JSON"):
     st.write(transactions)
